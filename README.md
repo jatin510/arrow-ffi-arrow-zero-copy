@@ -1,6 +1,6 @@
 # Arrow FFI Proof of Concept
 
-This project demonstrates Java Native Interface (JNI) integration between Java and Rust, where Java calls native Rust functions through FFI.
+This project demonstrates Java Native Interface (JNI) integration between Java and Rust with Apache Arrow data structures. The Java application creates Arrow batches of user data and calls native Rust functions through FFI for zero-copy data exchange.
 
 ## Project Structure
 
@@ -11,8 +11,11 @@ arrow-ffi/
 │   └── src/
 │       ├── lib.rs          # Library entry point
 │       └── native_implemenation_arrow.rs  # JNI implementation
-├── java/                   # Java application
-│   └── JavaClass.java      # Java class with native method calls
+├── java/                   # Java application (Maven project)
+│   ├── pom.xml             # Maven configuration with Arrow dependencies
+│   ├── run.sh              # Shell script to run the application
+│   └── src/main/java/
+│       └── JavaClass.java  # Java class with Arrow batch creation and native calls
 ├── .gitignore              # Git ignore patterns for build artifacts
 └── README.md               # This file
 ```
@@ -20,7 +23,8 @@ arrow-ffi/
 ## Prerequisites
 
 - **Rust**: Install from [rustup.rs](https://rustup.rs/)
-- **Java JDK**: Java 8 or higher
+- **Java JDK**: Java 11 or higher (required for Apache Arrow)
+- **Maven**: For Java dependency management
 - **Operating System**: macOS, Linux, or Windows
 
 ## How to Build and Run
@@ -36,29 +40,48 @@ cargo build --release
 
 This creates the native library at `target/release/libarrow_ffi_poc.dylib` (macOS) or equivalent for your platform.
 
-### Step 2: Compile the Java Class
+### Step 2: Build and Run the Java Application
 
-Navigate to the Java directory and compile:
+Navigate to the Java directory and use the run script:
 
 ```bash
 cd java
-javac JavaClass.java
+./run.sh
 ```
 
-### Step 3: Run the Java Application
-
-Run the Java class with the native library path:
+Or manually with Maven:
 
 ```bash
-java -Djava.library.path=../arrow_ffi_poc/target/release JavaClass
+cd java
+mvn clean compile
+java -cp "target/classes:$(mvn dependency:build-classpath -Dmdep.outputFile=/dev/stdout -q)" \
+     -Djava.library.path="../arrow_ffi_poc/target/release" \
+     --add-opens=java.base/java.nio=ALL-UNNAMED \
+     --add-opens=java.base/sun.nio.ch=ALL-UNNAMED \
+     JavaClass
 ```
 
 ### Expected Output
 
 ```
-Calling Rust native method...
+=== Arrow FFI Demo ===
+
+1. Testing original Rust function:
 Hello, world!
-Result from Rust: 43
+arg1: 42
+   Result from Rust: 43
+
+2. Creating Arrow batch with user data:
+   Schema: Schema<id: Int(32, true), name: Utf8, age: Int(32, true), email: Utf8, salary: Utf8>
+   Created batch with 5 rows
+   User Data:
+     Row 0: ID=1, Name='Alice Johnson', Age=28, Email='alice@example.com', Salary='$75,000'
+     Row 1: ID=2, Name='Bob Smith', Age=34, Email='bob@company.org', Salary='$85,000'
+     Row 2: ID=3, Name='Carol Williams', Age=31, Email='carol@tech.io', Salary='$92,000'
+     Row 3: ID=4, Name='David Brown', Age=45, Email='david@startup.net', Salary='$110,000'
+     Row 4: ID=5, Name='Eva Davis', Age=29, Email='eva@corp.com', Salary='$68,000'
+   Serialized batch size: 1096 bytes
+   ✓ Arrow batch created successfully!
 ```
 
 ## Technical Details
@@ -71,22 +94,36 @@ Result from Rust: 43
 
 ### Java Implementation
 
+- **Apache Arrow**: Creates columnar data batches for efficient processing
+- **User Data Schema**: ID (Int32), Name (Utf8), Age (Int32), Email (Utf8), Salary (Utf8)
 - **Native Method**: `rust_implementation(int arg1)` declared as `native`
 - **Library Loading**: `System.loadLibrary("arrow_ffi_poc")` loads the Rust library
-- **JNI Integration**: Seamless calls between Java and Rust
+- **Memory Management**: Uses Arrow's RootAllocator for off-heap memory
+- **Serialization**: Converts Arrow batches to bytes for potential FFI transfer
 
 ### Key Files
 
 1. **`arrow_ffi_poc/Cargo.toml`**: Rust project configuration with JNI dependency
 2. **`arrow_ffi_poc/src/native_implemenation_arrow.rs`**: Contains the JNI function implementation
-3. **`java/JavaClass.java`**: Java class that calls the native Rust function
+3. **`java/pom.xml`**: Maven configuration with Apache Arrow dependencies
+4. **`java/src/main/java/JavaClass.java`**: Java class with Arrow batch creation and native calls
+5. **`java/run.sh`**: Convenient script to build and run the application
 
 ## Development Workflow
 
 1. **Modify Rust Code**: Edit functions in `native_implemenation_arrow.rs`
 2. **Rebuild Library**: Run `cargo build --release` in `arrow_ffi_poc/`
-3. **Recompile Java**: Run `javac JavaClass.java` in `java/` (if Java code changed)
-4. **Test**: Run the Java application with the updated library
+3. **Modify Java Code**: Edit `java/src/main/java/JavaClass.java` for Arrow batch changes
+4. **Test**: Run `./run.sh` in `java/` directory to build and test changes
+
+## Arrow Features Demonstrated
+
+- **Schema Definition**: Structured data with multiple column types
+- **Vector Creation**: Efficient columnar storage with IntVector and VarCharVector
+- **Memory Management**: Proper allocation and cleanup with try-with-resources
+- **Data Population**: Sample user data with 5 records
+- **Serialization**: Converting Arrow batches to byte arrays for FFI transfer
+- **Zero-Copy Potential**: Foundation for efficient data exchange between Java and Rust
 
 ## Platform Notes
 
