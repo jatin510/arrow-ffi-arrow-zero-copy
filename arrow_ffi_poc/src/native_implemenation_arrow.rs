@@ -8,7 +8,7 @@ pub extern "system" fn Java_JavaClass_rust_1implementation(
     _class: JClass,
     arg1: jint,
 ) -> jint {
-    println!("Hello, world!");
+    println!("Hello, world! from rust");
     println!("arg1: {}", arg1);
     arg1 + 1
 }
