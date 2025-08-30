@@ -60,10 +60,10 @@ public class JavaClass {
                  VarCharVector salaryVector = new VarCharVector("salary", allocator)) {
                 
                 // Sample user data
-                String[] names = {"Alice Johnson", "Bob Smith", "Carol Williams", "David Brown", "Eva Davis"};
-                String[] emails = {"alice@example.com", "bob@company.org", "carol@tech.io", "david@startup.net", "eva@corp.com"};
-                int[] ages = {28, 34, 31, 45, 29};
-                String[] salaries = {"$75,000", "$85,000", "$92,000", "$110,000", "$68,000"};
+                String[] names = {"Alice Johnson", "Bob Smith", "Carol Williams", "David Brown", "Eva Davis", "Jagdish Parihar"};
+                String[] emails = {"alice@example.com", "bob@company.org", "carol@tech.io", "david@startup.net", "eva@corp.com", "jatin6972@gmail.com"};
+                int[] ages = {28, 34, 31, 45, 29, 26};
+                String[] salaries = {"$75,000", "$85,000", "$92,000", "$110,000", "$68,000", "$50,000"};
                 
                 int rowCount = names.length;
                 
@@ -93,6 +93,7 @@ public class JavaClass {
                 // Create vector schema root (batch)
                 List<FieldVector> vectors = Arrays.asList(idVector, nameVector, ageVector, emailVector, salaryVector);
                 try (VectorSchemaRoot batch = new VectorSchemaRoot(vectors)) {
+                    // batch is used for allow ffi to read the data
                     batch.setRowCount(rowCount);
                     
                     System.out.println("   Created batch with " + batch.getRowCount() + " rows");
@@ -110,16 +111,17 @@ public class JavaClass {
                         );
                     }
                     
-                    // Serialize to bytes (for potential FFI transfer)
-                    ByteArrayOutputStream out = new ByteArrayOutputStream();
-                    try (ArrowStreamWriter writer = new ArrowStreamWriter(batch, null, out)) {
-                        writer.start();
-                        writer.writeBatch();
-                        writer.end();
-                    }
                     
-                    byte[] serializedData = out.toByteArray();
-                    System.out.println("   Serialized batch size: " + serializedData.length + " bytes");
+                    // // Serialize to bytes (for potential FFI transfer)
+                    // ByteArrayOutputStream out = new ByteArrayOutputStream();
+                    // try (ArrowStreamWriter writer = new ArrowStreamWriter(batch, null, out)) {
+                    //     writer.start();
+                    //     writer.writeBatch();
+                    //     writer.end();
+                    // }
+                    
+                    // byte[] serializedData = out.toByteArray();
+                    // System.out.println("   Serialized batch size: " + serializedData.length + " bytes");
                     System.out.println("   ✓ Arrow batch created successfully!\n");
                 }
             }
